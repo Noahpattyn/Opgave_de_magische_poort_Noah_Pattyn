@@ -1,0 +1,122 @@
+/* Reset margins and paddings for all elements */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #4caf50;
+}
+
+/* Main container grid */
+.container {
+    display: grid;
+    grid-template-areas:
+        "header header"
+        "sidebar content"
+        "footer footer";
+    grid-template-columns: 270px 1fr;
+    grid-template-rows: 140px 1fr 70px;
+    height: 100vh; /* Use full viewport height */
+}
+
+/* Header styling */
+header {
+    grid-area: header;
+    background-color: #004d40;
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-family: Arial, sans-serif;
+    margin-left: 270px; 
+    margin-right: 20px; 
+    border-radius: 10px 10px 10px 10px; 
+}
+
+/* Sidebar styling */
+.sidebar {
+    grid-area: sidebar;
+    background-color: #2c3e50;
+    color: white;
+    padding: 15px;
+}
+
+    .sidebar nav ul {
+        list-style-type: none;
+        padding: 0;
+    }
+
+        .sidebar nav ul li {
+            margin-bottom: 10px;
+        }
+
+            .sidebar nav ul li a {
+                color: white;
+                text-decoration: none;
+                font-size: 18px;
+            }
+
+/* Content area styling */
+.content {
+    grid-area: content;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* Vertically centers the content */
+    align-items: center; /* Horizontally centers the content */
+    text-align: center;
+    color: white;
+    font-family: Arial, sans-serif;
+    height: 100%; /* Fills its grid area */
+}
+
+    .content h1 {
+        font-size: 36px;
+        margin-bottom: 20px;
+        padding: 0;
+        color: white;
+    }
+
+    .content p {
+        font-size: 18px;
+        color: white;
+    }
+
+/* Footer styling */
+footer {
+    grid-area: footer;
+    background-color: #004d40;
+    color: white;
+    text-align: center;
+    line-height: 70px;
+    margin-left: 270px;
+    margin-right: 20px; 
+    border-radius: 10px 10px 10px 10px;
+}
+
+/* Zorg ervoor dat de form-groepen binnen een flex container komen */
+.form-group {
+    display: flex;
+    flex-direction: column; /* Standaard: maakt de elementen verticaal */
+    margin-bottom: 15px;
+}
+
+/* Voeg een container toe die de 3 form-groepen naast elkaar plaatst */
+.radio-groups-container {
+    display: flex; /* Zet de container op flex voor horizontale plaatsing */
+    justify-content: space-between; /* Zorgt ervoor dat de items netjes verspreid worden */
+    gap: 15px; /* Ruimte tussen de elementen */
+}
+
+/* Geef de individuele form-groepen een breedte van 30% zodat ze naast elkaar passen */
+.radio-group {
+    flex: 1; /* Laat de elementen zichzelf uitbreiden binnen hun container */
+    min-width: 100px; /* Zorgt ervoor dat ze niet te klein worden */
+}
+
+/* Optioneel: Stileren van de knoppen voor betere weergave */
+.form-check-input {
+    margin-right: 5px;
+}

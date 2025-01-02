@@ -1,0 +1,218 @@
+﻿@page "/spel"
+@rendermode InteractiveServer
+
+<div class="container">
+    <header>
+        <h1>De magische poort!</h1>  @** Hoofdtitel van het spel **@
+    </header>
+
+    <div class="content">
+        <h6>Score: @score</h6>  @** Laat de huidige score zien **@
+        
+        <div class="my-3">
+            @* Knop om het spel opnieuw te starten *@
+            <button class="btn btn-primary" @onclick="() => resetGame()">Herstart Spel</button>
+            
+            @if (!gamestarted && !isWon)
+            {
+                @* Knop om het spel te starten wanneer het nog niet gestart is en nog niet gewonnen *@
+                <button class="btn btn-success" @onclick="() => StartGame()">Start Spel</button>
+            }
+        </div>
+
+        @if (isWon)
+        {
+            gamestarted = false;  @** Stop het spel wanneer het gewonnen is *@
+            Task.Run(NewPoort);   @** Genereer een nieuwe geheime poort *@
+            <div class="alert alert-success">
+                <p><b>Je hebt de poort geraden in @pogingen pogingen! Wil je verder spelen?</b></p>
+                @* Knop om verder te spelen nadat het spel gewonnen is *@
+                <button class="btn btn-success" @onclick="() => StartGame()">Verder Spelen</button>
+            </div>
+        }
+        else if (gamestarted)
+        {
+            @* Instructie om de juiste combinatie te raden *@
+            <p>Zoek de juiste combinatie om de poort te openen!</p>
+            
+            <EditForm Model="GekozenPoort" OnValidSubmit="ControleerAntwoorden">
+                <div class="form-group">
+                    <h4>Kies de juiste kleur:</h4>
+                    <InputRadioGroup @bind-Value="GekozenPoort.Kleur" Name="KleurGroep">
+                        @foreach (var kleur in Enum.GetValues(typeof(Data.Models.Kleur)))
+                        {
+                            <div>
+                                <InputRadio class="form-check-input" Value="@(kleur)" /> @kleur  @* Genereer opties voor de kleur *@
+                            </div>
+                        }
+                    </InputRadioGroup>
+                </div>
+
+                <div class="form-group">
+                    <h4>Kies de juiste grootte:</h4>
+                    <InputRadioGroup @bind-Value="GekozenPoort.Grootte" Name="GrootteGroep">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            <div>
+                                <InputRadio class="form-check-input" Value="@i" /> @i  @* Genereer opties voor de grootte (1-5) *@
+                            </div>
+                        }
+                    </InputRadioGroup>
+                </div>
+
+                <div class="form-group">
+                    <h4>Kies het juiste aantal inkeppingen:</h4>
+                    <InputRadioGroup @bind-Value="GekozenPoort.AantalInkeppingen" Name="InkeppingenGroep">
+                        @for (int i = 0; i <= 4; i++)
+                        {
+                            <div>
+                                <InputRadio class="form-check-input" Value="@i" /> @i  @* Genereer opties voor het aantal inkeppingen (0-4) *@
+                            </div>
+                        }
+                    </InputRadioGroup>
+                </div>
+
+                <div class="form-group">
+                    <h4>Raad het gewicht:</h4>
+                    <InputNumber @bind-Value="GekozenPoort.Gewicht" class="form-control" Name="GewichtInput" @onfocusout="checkInput" />
+                    @if (GekozenPoort.Gewicht < 0 || GekozenPoort.Gewicht >= 10)
+                    {
+                        @* Foutmelding wanneer het gewicht niet tussen 0 en 10 ligt *@
+                        <small class="text-danger">Gewicht moet tussen 0 en 10 liggen.</small>
+                    }
+                </div>
+
+                @* Knop om de antwoorden te controleren *@
+                <button type="submit" class="btn btn-primary">Controleer</button>
+            </EditForm>
+
+            @if (!string.IsNullOrEmpty(resultaat))
+            {
+                @* Weergeven van het resultaat van de poging *@
+                <div>
+                    @((MarkupString)resultaat)  @** Toon de feedback voor de poging **@
+                </div>
+            }
+        }
+        else
+        {
+            @* Instructie om het spel te starten *@
+            <p>Klik op Start Spel om te beginnen!</p>
+        }
+    </div>
+    <footer>
+        2025 Magische Poort Noah Pattyn
+    </footer>
+</div>
+
+@code {
+    int score = 0;  @** Huidige score van de speler **@
+    bool gamestarted = false;  @** Geeft aan of het spel gestart is of niet **@
+    Data.Models.Poort geheimePoort = new Data.Models.Poort();  @** De geheime poort die de speler moet raden **@
+    Data.Models.Poort GekozenPoort = new Data.Models.Poort();  @** De poort die de speler kiest om te raden **@
+    string? resultaat;  @** Het resultaat van de poging (feedback) **@
+    int points = 0;  @** Aantal juiste antwoorden in de huidige poging **@
+    bool isWon = false;  @** Geeft aan of de speler het spel gewonnen heeft **@
+    int pogingen = 0;  @** Aantal pogingen die de speler heeft gedaan **@
+
+    void StartGame()
+    {
+        resultaat = "";  @** Maak het resultaat leeg bij het starten van het spel **@
+        pogingen = 0;  @** Zet het aantal pogingen op 0 **@
+        isWon = false;  @** Zet de winststatus op false bij het starten van een nieuw spel **@
+        gamestarted = true;  @** Zet de status van het spel op gestart **@
+        StateHasChanged();  @** Herlaad de component om de wijzigingen door te voeren **@
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await NewPoort();  @** Genereer een geheime poort bij het initialiseren van de component **@
+    }
+
+    async Task NewPoort()
+    {
+        Random random = new Random();  @** Maak een nieuwe Random instantie aan voor willekeurige keuzes **@
+        geheimePoort.Kleur = (Data.Models.Kleur)random.Next(Enum.GetValues(typeof(Data.Models.Kleur)).Length);  @** Kies een willekeurige kleur **@
+        geheimePoort.Grootte = random.Next(1, 6);  @** Kies een willekeurige grootte (tussen 1 en 5) **@
+        geheimePoort.AantalInkeppingen = random.Next(0, 4);  @** Kies een willekeurig aantal inkeppingen (tussen 0 en 3) **@
+        geheimePoort.Gewicht = random.Next(1, 10);  @** Kies een willekeurig gewicht (tussen 1 en 9) **@
+        StateHasChanged();  @** Herlaad de component om de nieuwe geheime poort weer te geven **@
+        await Task.Delay(2000);  @** Wacht 2 seconden voordat de geheime poort is ingesteld **@
+    }
+
+    void resetGame()
+    {
+        score = 0;  @** Zet de score terug naar 0 bij het resetten van het spel **@
+        Task.Run(NewPoort);  @** Genereer een nieuwe geheime poort bij het resetten **@
+        StartGame();  @** Start het spel opnieuw **@
+        StateHasChanged();  @** Herlaad de component na het resetten van het spel **@
+    }
+
+    void checkInput()
+    {
+        if (GekozenPoort.Gewicht < 0 || GekozenPoort.Gewicht >= 10)
+        {
+            GekozenPoort.Gewicht = 0;  @** Stel het gewicht in op 0 als de invoer buiten het toegestane bereik valt **@
+        }
+    }
+
+    void ControleerAntwoorden()
+    {
+        points = 0;  @** Zet de punten op 0 voor elke nieuwe poging **@
+        pogingen++;  @** Verhoog het aantal pogingen **@
+        var feedback = new List<string>();  @** Maak een lijst voor de feedback van de poging **@
+
+        if (geheimePoort.Kleur == GekozenPoort.Kleur)
+        {
+            feedback.Add("De kleur is correct!");  @** Geef feedback voor de juiste kleur **@
+            points++;  @** Verhoog de punten als de kleur correct is **@
+        }
+        else
+        {
+            feedback.Add($"De kleur is niet {GekozenPoort.Kleur}");  @** Geef feedback voor een foute kleur **@
+        }
+
+        if (geheimePoort.Grootte == GekozenPoort.Grootte)
+        {
+            feedback.Add("De grootte is correct!");  @** Geef feedback voor de juiste grootte **@
+            points++;  @** Verhoog de punten als de grootte correct is **@
+        }
+        else
+        {
+            feedback.Add($"De grootte is niet {GekozenPoort.Grootte}");  @** Geef feedback voor een foute grootte **@
+        }
+
+        if (geheimePoort.AantalInkeppingen == GekozenPoort.AantalInkeppingen)
+        {
+            feedback.Add("Het aantal inkeppingen is correct!");  @** Geef feedback voor het juiste aantal inkeppingen **@
+            points++;  @** Verhoog de punten als het aantal inkeppingen correct is **@
+        }
+        else
+        {
+            feedback.Add($"Het aantal inkeppingen is niet {GekozenPoort.AantalInkeppingen}");  @** Geef feedback voor een fout aantal inkeppingen **@
+        }
+
+        if (geheimePoort.Gewicht == GekozenPoort.Gewicht)
+        {
+            feedback.Add("Het gewicht is correct!");  @** Geef feedback voor het juiste gewicht **@
+            points++;  @** Verhoog de punten als het gewicht correct is **@
+        }
+        else
+        {
+            feedback.Add($"Het gewicht is niet {GekozenPoort.Gewicht}");  @** Geef feedback voor een fout gewicht **@
+        }
+
+        if (geheimePoort.Gewicht < GekozenPoort.Gewicht)
+            feedback.Add("Het gewicht is te hoog");  @** Feedback voor een te hoog gewicht **@
+
+        if (geheimePoort.Gewicht > GekozenPoort.Gewicht)
+            feedback.Add("Het gewicht is te laag");  @** Feedback voor een te laag gewicht **@
+
+        if (points == 4)
+        {
+            isWon = true;  @** Het spel is gewonnen als alle punten correct zijn **@
+            score++;  @** Verhoog de score wanneer het spel gewonnen is **@
+        }
+        resultaat = string.Join("<br>", feedback);  @** Zet de feedback om in een string voor weergave **@
+    }
+}
